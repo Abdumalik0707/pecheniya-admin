@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
-type ActiveKey = "dashboard" | "orders" | "customers";
+type ActiveKey = "dashboard" | "orders" | "products" | "customers";
 
 export function AdminSidebar({ active, mounted }: { active: ActiveKey; mounted: boolean }) {
   const router = useRouter();
@@ -17,6 +17,7 @@ export function AdminSidebar({ active, mounted }: { active: ActiveKey; mounted: 
   const NAV_ITEMS: { key: ActiveKey; icon: string; label: string; path: string }[] = [
     { key: "dashboard", icon: "📊", label: t("nav_dashboard"), path: "/" },
     { key: "orders", icon: "📦", label: t("nav_orders"), path: "/orders" },
+    { key: "products", icon: "🏷️", label: t("nav_products"), path: "/products" },
     { key: "customers", icon: "👥", label: t("nav_customers"), path: "/customers" },
   ];
 
