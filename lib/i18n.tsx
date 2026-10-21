@@ -1,0 +1,343 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+
+export type Lang = "uz" | "ru" | "en";
+
+const dict = {
+  uz: {
+    // Sidebar
+    sidebar_title: "Pecheniya Admin",
+    sidebar_subtitle: "Boshqaruv paneli",
+    nav_dashboard: "Dashboard",
+    nav_orders: "Buyurtmalar",
+    nav_customers: "Mijozlar",
+    theme_dark: "Qorong'i",
+    theme_light: "Oq",
+    theme_prefix: "Tema:",
+    logout: "Chiqish",
+    back: "Orqaga",
+    loading: "Yuklanmoqda...",
+
+    // Login
+    login_title: "Pecheniya Admin Panel",
+    login_subtitle: "Faqat adminlar uchun",
+    login_username: "Username",
+    login_password: "Parol",
+    login_submit: "Kirish →",
+    login_checking: "Tekshirilmoqda...",
+    login_not_admin: "Siz admin emassiz",
+    login_generic_error: "Xatolik yuz berdi",
+    login_server_error: "Server bilan bog'lanishda xatolik",
+
+    // Dashboard
+    dashboard_title: "Dashboard",
+    dashboard_subtitle: "Buyurtmalar va savdo tahlili (real ma'lumotlar)",
+    period_daily: "Bugun",
+    period_weekly: "Hafta",
+    period_monthly: "Oy",
+    stat_orders: "Buyurtmalar",
+    stat_revenue: "Tushum",
+    stat_individual: "Oddiy mijoz",
+    badge_individual: "Oddiy mijoz",
+    stat_shop: "Do'kon",
+    top_products_title: "🔥 Eng ko'p sotilgan mahsulotlar",
+    top_products_empty: "Bu davrda buyurtma yo'q",
+    recent_orders_title: "So'nggi buyurtmalar",
+    recent_orders_empty: "Hali buyurtma yo'q",
+    filter_all: "Barchasi",
+    filter_individual: "Oddiy",
+    filter_shop: "Do'kon",
+    th_customer: "Mijoz",
+    th_type: "Turi",
+    th_product: "Mahsulot",
+    th_amount: "Summa",
+    th_date: "Sana",
+    th_status: "Holat",
+    badge_shop: "Do'kon",
+    badge_customer: "Mijoz",
+
+    // Orders / Kanban
+    orders_title: "📦 Buyurtmalar",
+    orders_subtitle: "Buyurtmalarni Kanban yoki Ro'yxat ko'rinishida boshqaring",
+    empty_column: "Bo'sh",
+    pay_cash: "💵 Naqd",
+    pay_card: "💳 Karta",
+    pay_online: "🌐 Online",
+    status_new: "Yangi buyurtma",
+    status_paid: "To'lov o'tkazildi",
+    status_delivering: "Yetkazib berishda",
+    status_delivered: "Yetkazib berildi",
+    view_kanban: "Kanban",
+    view_list: "Ro'yxat",
+    export_excel: "Excel faylga yuklab olish",
+    export_selected: "ta tanlangan",
+    export_select_all: "Barchasini tanlash",
+    export_clear: "Tanlashni tozalash",
+    th_order_date: "Sana",
+    th_products_count: "Mahsulotlar",
+    th_total: "Jami",
+    th_status_col: "Holat",
+    orders_empty: "Hali buyurtma yo'q",
+
+    // Customers
+    customers_title: "👥 Mijozlar",
+    customers_subtitle: "Ro'yxatdan o'tgan barcha foydalanuvchilar",
+    customers_empty: "Hali mijoz yo'q",
+    customers_no_match: "Qidiruvga mos mijoz topilmadi",
+    customers_search_ph: "Ism yoki telefon bo'yicha qidirish...",
+    customers_registered_on: "Ro'yxatdan o'tgan sana:",
+    customer_orders_count: "Buyurtmalar soni",
+    customer_total_orders: "Jami buyurtmalar",
+    customer_total_spent: "Jami xarid summasi",
+    customer_orders_title: "Buyurtmalar tarixi",
+    customer_orders_empty: "Bu mijozda hali buyurtma yo'q",
+    th_name: "Ism",
+    th_phone: "Telefon",
+    th_shopname: "Do'kon nomi",
+    th_address: "Manzil",
+    th_registered: "Ro'yxatdan o'tgan sana",
+
+    // Order detail modal
+    detail_label: "Buyurtma tafsiloti",
+    detail_address_title: "Yetkazib berish manzili",
+    detail_no_coords: "Bu buyurtmada xarita koordinatalari saqlanmagan",
+    detail_products: "Mahsulotlar",
+    detail_total: "Jami summa",
+    detail_change_status: "Holatni o'zgartirish",
+    map_loading: "Xarita yuklanmoqda...",
+    open_in_maps: "📍 Google Maps'da ochish",
+  },
+  ru: {
+    sidebar_title: "Pecheniya Admin",
+    sidebar_subtitle: "Панель управления",
+    nav_dashboard: "Дашборд",
+    nav_orders: "Заказы",
+    nav_customers: "Клиенты",
+    theme_dark: "Тёмная",
+    theme_light: "Светлая",
+    theme_prefix: "Тема:",
+    logout: "Выйти",
+    back: "Назад",
+    loading: "Загрузка...",
+
+    login_title: "Pecheniya Admin Panel",
+    login_subtitle: "Только для администраторов",
+    login_username: "Логин",
+    login_password: "Пароль",
+    login_submit: "Войти →",
+    login_checking: "Проверка...",
+    login_not_admin: "Вы не администратор",
+    login_generic_error: "Произошла ошибка",
+    login_server_error: "Ошибка соединения с сервером",
+
+    dashboard_title: "Дашборд",
+    dashboard_subtitle: "Анализ заказов и продаж (реальные данные)",
+    period_daily: "Сегодня",
+    period_weekly: "Неделя",
+    period_monthly: "Месяц",
+    stat_orders: "Заказы",
+    stat_revenue: "Выручка",
+    stat_individual: "Обычные клиенты",
+    badge_individual: "Обычный клиент",
+    stat_shop: "Магазины",
+    top_products_title: "🔥 Самые продаваемые товары",
+    top_products_empty: "За этот период заказов нет",
+    recent_orders_title: "Последние заказы",
+    recent_orders_empty: "Заказов пока нет",
+    filter_all: "Все",
+    filter_individual: "Обычные",
+    filter_shop: "Магазины",
+    th_customer: "Клиент",
+    th_type: "Тип",
+    th_product: "Товар",
+    th_amount: "Сумма",
+    th_date: "Дата",
+    th_status: "Статус",
+    badge_shop: "Магазин",
+    badge_customer: "Клиент",
+
+    orders_title: "📦 Заказы",
+    orders_subtitle: "Управляйте заказами в виде Канбан или Список",
+    empty_column: "Пусто",
+    pay_cash: "💵 Наличные",
+    pay_card: "💳 Карта",
+    pay_online: "🌐 Онлайн",
+    status_new: "Новый заказ",
+    status_paid: "Оплата произведена",
+    status_delivering: "В доставке",
+    status_delivered: "Доставлено",
+    view_kanban: "Канбан",
+    view_list: "Список",
+    export_excel: "Скачать Excel",
+    export_selected: "выбрано",
+    export_select_all: "Выбрать все",
+    export_clear: "Сбросить выбор",
+    th_order_date: "Дата",
+    th_products_count: "Товары",
+    th_total: "Сумма",
+    th_status_col: "Статус",
+    orders_empty: "Заказов пока нет",
+
+    customers_title: "👥 Клиенты",
+    customers_subtitle: "Все зарегистрированные пользователи",
+    customers_empty: "Клиентов пока нет",
+    customers_no_match: "По вашему запросу клиенты не найдены",
+    customers_search_ph: "Поиск по имени или телефону...",
+    customers_registered_on: "Дата регистрации:",
+    customer_orders_count: "Кол-во заказов",
+    customer_total_orders: "Всего заказов",
+    customer_total_spent: "Общая сумма покупок",
+    customer_orders_title: "История заказов",
+    customer_orders_empty: "У этого клиента пока нет заказов",
+    th_name: "Имя",
+    th_phone: "Телефон",
+    th_shopname: "Название магазина",
+    th_address: "Адрес",
+    th_registered: "Дата регистрации",
+
+    detail_label: "Детали заказа",
+    detail_address_title: "Адрес доставки",
+    detail_no_coords: "Координаты для этого заказа не сохранены",
+    detail_products: "Товары",
+    detail_total: "Итоговая сумма",
+    detail_change_status: "Изменить статус",
+    map_loading: "Карта загружается...",
+    open_in_maps: "📍 Открыть в Google Maps",
+  },
+  en: {
+    sidebar_title: "Pecheniya Admin",
+    sidebar_subtitle: "Admin panel",
+    nav_dashboard: "Dashboard",
+    nav_orders: "Orders",
+    nav_customers: "Customers",
+    theme_dark: "Dark",
+    theme_light: "Light",
+    theme_prefix: "Theme:",
+    logout: "Log out",
+    back: "Back",
+    loading: "Loading...",
+
+    login_title: "Pecheniya Admin Panel",
+    login_subtitle: "Admins only",
+    login_username: "Username",
+    login_password: "Password",
+    login_submit: "Log in →",
+    login_checking: "Checking...",
+    login_not_admin: "You are not an admin",
+    login_generic_error: "Something went wrong",
+    login_server_error: "Could not reach the server",
+
+    dashboard_title: "Dashboard",
+    dashboard_subtitle: "Orders and sales overview (live data)",
+    period_daily: "Today",
+    period_weekly: "Week",
+    period_monthly: "Month",
+    stat_orders: "Orders",
+    stat_revenue: "Revenue",
+    stat_individual: "Individual customers",
+    badge_individual: "Individual",
+    stat_shop: "Shops",
+    top_products_title: "🔥 Best-selling products",
+    top_products_empty: "No orders in this period",
+    recent_orders_title: "Recent orders",
+    recent_orders_empty: "No orders yet",
+    filter_all: "All",
+    filter_individual: "Individual",
+    filter_shop: "Shops",
+    th_customer: "Customer",
+    th_type: "Type",
+    th_product: "Product",
+    th_amount: "Amount",
+    th_date: "Date",
+    th_status: "Status",
+    badge_shop: "Shop",
+    badge_customer: "Customer",
+
+    orders_title: "📦 Orders",
+    orders_subtitle: "Manage orders in Kanban or List view",
+    empty_column: "Empty",
+    pay_cash: "💵 Cash",
+    pay_card: "💳 Card",
+    pay_online: "🌐 Online",
+    status_new: "New order",
+    status_paid: "Payment made",
+    status_delivering: "Out for delivery",
+    status_delivered: "Delivered",
+    view_kanban: "Kanban",
+    view_list: "List",
+    export_excel: "Download Excel",
+    export_selected: "selected",
+    export_select_all: "Select all",
+    export_clear: "Clear selection",
+    th_order_date: "Date",
+    th_products_count: "Products",
+    th_total: "Total",
+    th_status_col: "Status",
+    orders_empty: "No orders yet",
+
+    customers_title: "👥 Customers",
+    customers_subtitle: "All registered users",
+    customers_empty: "No customers yet",
+    customers_no_match: "No customers match your search",
+    customers_search_ph: "Search by name or phone...",
+    customers_registered_on: "Registered on:",
+    customer_orders_count: "Orders",
+    customer_total_orders: "Total orders",
+    customer_total_spent: "Total spent",
+    customer_orders_title: "Order history",
+    customer_orders_empty: "This customer has no orders yet",
+    th_name: "Name",
+    th_phone: "Phone",
+    th_shopname: "Shop name",
+    th_address: "Address",
+    th_registered: "Registered on",
+
+    detail_label: "Order details",
+    detail_address_title: "Delivery address",
+    detail_no_coords: "No map coordinates saved for this order",
+    detail_products: "Products",
+    detail_total: "Total amount",
+    detail_change_status: "Change status",
+    map_loading: "Loading map...",
+    open_in_maps: "📍 Open in Google Maps",
+  },
+} as const;
+
+export type TranslationKey = keyof (typeof dict)["uz"];
+
+interface LanguageContextValue {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: TranslationKey) => string;
+}
+
+const LanguageContext = createContext<LanguageContextValue | null>(null);
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("uz");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("pecheniya_lang") as Lang | null;
+    if (saved && (saved === "uz" || saved === "ru" || saved === "en")) {
+      setLangState(saved);
+    }
+  }, []);
+
+  function setLang(l: Lang) {
+    setLangState(l);
+    localStorage.setItem("pecheniya_lang", l);
+  }
+
+  function t(key: TranslationKey): string {
+    return dict[lang][key] ?? dict.uz[key] ?? key;
+  }
+
+  return <LanguageContext.Provider value={{ lang, setLang, t }}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage() {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error("useLanguage must be used within LanguageProvider");
+  return ctx;
+}

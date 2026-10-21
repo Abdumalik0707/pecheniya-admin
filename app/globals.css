@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-jakarta: var(--font-jakarta);
+  --font-dm: var(--font-dm);
+}
+
+/* ── Light mode ── */
+:root {
+  --bg: #fffdf8;
+  --bg-2: #faf3e7;
+  --surface: #ffffff;
+  --surface-2: #f5ecdb;
+  --border: rgba(90, 58, 20, 0.10);
+  --border-strong: rgba(90, 58, 20, 0.18);
+  --fg: #2c1b0e;
+  --muted: rgba(28, 17, 8, 0.82);
+  --muted-2: rgba(28, 17, 8, 0.58);
+  --accent: #c9622f;
+  --accent-2: #e08249;
+  --accent-bg: rgba(201, 98, 47, 0.10);
+  --accent-text: #a1481c;
+  --green: #16a34a;
+  --red: #dc2626;
+  --amber: #d97706;
+  --blue: #2563eb;
+  --shadow: 0 4px 24px rgba(90,58,20,0.08);
+  --shadow-lg: 0 12px 48px rgba(90,58,20,0.14);
+}
+
+/* ── Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16110c;
+    --bg-2: #1c1611;
+    --surface: #221b14;
+    --surface-2: #2b2219;
+    --border: rgba(255, 235, 205, 0.08);
+    --border-strong: rgba(255, 235, 205, 0.16);
+    --fg: #f5ecdc;
+    --muted: rgba(245, 236, 220, 0.52);
+    --muted-2: rgba(245, 236, 220, 0.32);
+    --accent: #e08249;
+    --accent-2: #ec9a68;
+    --accent-bg: rgba(224, 130, 73, 0.16);
+    --accent-text: #f3b389;
+    --shadow: 0 4px 24px rgba(0,0,0,0.40);
+    --shadow-lg: 0 12px 48px rgba(0,0,0,0.60);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #16110c;
+  --bg-2: #1c1611;
+  --surface: #221b14;
+  --surface-2: #2b2219;
+  --border: rgba(255, 235, 205, 0.08);
+  --border-strong: rgba(255, 235, 205, 0.16);
+  --fg: #f5ecdc;
+  --muted: rgba(245, 236, 220, 0.52);
+  --muted-2: rgba(245, 236, 220, 0.32);
+  --accent: #e08249;
+  --accent-2: #ec9a68;
+  --accent-bg: rgba(224, 130, 73, 0.16);
+  --accent-text: #f3b389;
+  --shadow: 0 4px 24px rgba(0,0,0,0.40);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.60);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-dm, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
