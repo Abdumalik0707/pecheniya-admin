@@ -34,6 +34,14 @@ const CATEGORIES = [
   { value: "boshqa", label: "Boshqa" },
 ];
 
+const SITE_URL = "https://pecheniya-site.vercel.app";
+
+function resolveImage(src: string) {
+  if (!src) return "";
+  if (src.startsWith("http")) return src;
+  return SITE_URL + src;
+}
+
 const EMPTY_FORM = {
   name: "",
   brand: "SmaG",
@@ -250,7 +258,7 @@ export default function ProductsPage() {
                   {p.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={p.image}
+                      src={resolveImage(p.image)}
                       alt={p.name}
                       style={{
                         position: "absolute", inset: 0, width: "100%", height: "100%",
@@ -456,7 +464,7 @@ export default function ProductsPage() {
                 {form.image && (
                   <div style={{ marginTop: 8, width: 80, height: 80, borderRadius: 10, overflow: "hidden", background: "var(--surface-2)" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={form.image} alt="preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <img src={resolveImage(form.image)} alt="preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   </div>
                 )}
               </div>
