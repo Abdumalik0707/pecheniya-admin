@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerDetailModal } from "@/components/CustomerDetailModal";
+import { SearchIcon, ArrowLeftIcon, UsersIcon } from "@/components/Icons";
+import { apiFetch } from "@/lib/api";
 
 interface UserRow {
   _id: string;
@@ -48,7 +50,7 @@ export default function CustomersPage() {
 
   async function fetchUsers() {
     try {
-      const res = await fetch("/api/users");
+      const res = await apiFetch("/api/users");
       const data = await res.json();
       if (data.success) setUsers(data.users);
     } catch (err) {
@@ -60,7 +62,7 @@ export default function CustomersPage() {
 
   async function fetchOrders() {
     try {
-      const res = await fetch("/api/orders");
+      const res = await apiFetch("/api/orders");
       const data = await res.json();
       if (data.success) setOrders(data.orders);
     } catch (err) {
@@ -105,11 +107,15 @@ export default function CustomersPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => router.push("/")}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", cursor: "pointer", fontSize: 14 }}
+              style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 7 }}
             >
-              ← {t("back")}
+              <ArrowLeftIcon size={16} color="var(--muted)" />
+              {t("back")}
             </button>
-            <h1 style={{ fontFamily: "var(--font-jakarta)", fontSize: 24, fontWeight: 800, color: "var(--fg)" }}>
+            <h1 style={{ fontFamily: "var(--font-jakarta)", fontSize: 24, fontWeight: 800, color: "var(--fg)", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(59,130,246,0.12)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                <UsersIcon size={20} color="var(--blue)" />
+              </span>
               {t("customers_title")}
             </h1>
           </div>
@@ -120,8 +126,8 @@ export default function CustomersPage() {
 
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ position: "relative", minWidth: 220 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "var(--muted)" }}>
-            🔍
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "flex", pointerEvents: "none" }}>
+            <SearchIcon size={16} color="var(--muted)" />
           </span>
           <input
             value={search}

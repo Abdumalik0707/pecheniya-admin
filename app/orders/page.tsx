@@ -3,8 +3,30 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { OrderDetailModal } from "@/components/OrderDetailModal";
+import { NewOrderModal } from "@/components/NewOrderModal";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  SparkleIcon,
+  BoxIcon,
+  WalletIcon,
+  TruckIcon,
+  CheckCircleIcon,
+  KanbanIcon,
+  ListIcon,
+  DownloadIcon,
+  SpinnerIcon,
+  PhoneIcon,
+  MapPinIcon,
+  StoreIcon,
+  UserIcon,
+  ArrowLeftIcon,
+  CashIcon,
+  CardIcon,
+  GlobeIcon,
+  PlusIcon,
+} from "@/components/Icons";
+import { apiFetch } from "@/lib/api";
 
 type OrderStatus =
   | "yangi_mijoz"
@@ -57,11 +79,13 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   yetkazib_berishda: "#f59e0b",
   yetkazib_berildi: "#10b981",
 };
-const STATUS_ICONS: Record<OrderStatus, string> = {
-  yangi_mijoz: "🆕",
-  tolov_otkazildi: "💰",
-  yetkazib_berishda: "🚚",
-  yetkazib_berildi: "✅",
+type IconComponent = React.ComponentType<{ size?: number; color?: string }>;
+
+const STATUS_ICONS: Record<OrderStatus, IconComponent> = {
+  yangi_mijoz: SparkleIcon,
+  tolov_otkazildi: WalletIcon,
+  yetkazib_berishda: TruckIcon,
+  yetkazib_berildi: CheckCircleIcon,
 };
 
 export default function OrdersPage() {
@@ -81,6 +105,8 @@ export default function OrdersPage() {
   const [view, setView] = useState<ViewMode>("kanban");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
+  const [showNewOrder, setShowNewOrder] = useState(false);
+  const [products, setProducts] = useState<Array<{ _id: string; name: string; price: number; shopPrice?: number; unit: string; image: string; categoryLabel: string }>>([]);
 
   useEffect(() => {
     const u = localStorage.getItem("pecheniya_admin");
@@ -96,11 +122,22 @@ export default function OrdersPage() {
     const savedView = localStorage.getItem("pecheniya_orders_view");
     if (savedView === "list" || savedView === "kanban") setView(savedView);
     fetchOrders();
+    fetchProducts();
   }, [router]);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await apiFetch("/api/products");
+      const data = await res.json();
+      if (data.success) setProducts(data.products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("/api/orders");
+      const res = await apiFetch("/api/orders");
       const data = await res.json();
       if (data.success) setOrders(data.orders);
     } catch (error) {
@@ -112,7 +149,7 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
+      const res = await apiFetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -170,7 +207,7 @@ export default function OrdersPage() {
     if (!checked.size) return;
     setExporting(true);
     try {
-      const res = await fetch("/api/orders/export", {
+      const res = await apiFetch("/api/orders/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(checked) }),
@@ -226,15 +263,32 @@ export default function OrdersPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => router.push("/")}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", cursor: "pointer", fontSize: 14 }}
+              style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 7 }}
             >
-              ← {t("back")}
+              <ArrowLeftIcon size={16} color="var(--muted)" />
+              {t("back")}
             </button>
-            <h1 style={{ fontFamily: "var(--font-jakarta)", fontSize: 24, fontWeight: 800, color: "var(--fg)" }}>
+            <h1 style={{ fontFamily: "var(--font-jakarta)", fontSize: 24, fontWeight: 800, color: "var(--fg)", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 11, background: "var(--accent-bg)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                <BoxIcon size={20} color="var(--accent)" />
+              </span>
               {t("orders_title")}
             </h1>
           </div>
-          <LanguageSwitcher />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => setShowNewOrder(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 12,
+                border: "none", background: "var(--accent)", color: "#fff", fontWeight: 700, fontSize: 13.5,
+                cursor: "pointer",
+              }}
+            >
+              <PlusIcon size={15} color="#fff" />
+              Yangi buyurtma
+            </button>
+            <LanguageSwitcher />
+          </div>
         </div>
         <p style={{ color: "var(--muted)", fontSize: 14 }}>{t("orders_subtitle")}</p>
       </div>
@@ -269,7 +323,12 @@ export default function OrdersPage() {
                 gap: 6,
               }}
             >
-              {v === "kanban" ? "📋" : "📄"} {v === "kanban" ? t("view_kanban") : t("view_list")}
+              {v === "kanban" ? (
+                <KanbanIcon size={15} color={view === v ? "#fff" : "var(--muted)"} />
+              ) : (
+                <ListIcon size={15} color={view === v ? "#fff" : "var(--muted)"} />
+              )}
+              {v === "kanban" ? t("view_kanban") : t("view_list")}
             </button>
           ))}
         </div>
@@ -313,7 +372,8 @@ export default function OrdersPage() {
                     gap: 6,
                   }}
                 >
-                  {exporting ? "⏳" : "📥"} {t("export_excel")}
+                  {exporting ? <SpinnerIcon size={15} color="#fff" /> : <DownloadIcon size={15} color="#fff" />}
+                  {t("export_excel")}
                 </button>
               </>
             )}
@@ -352,8 +412,10 @@ export default function OrdersPage() {
                     borderBottom: `2px solid ${color}30`,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 20 }}>{STATUS_ICONS[stage.id]}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                    <span style={{ width: 30, height: 30, borderRadius: 9, background: `${color}1a`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      {(() => { const Icon = STATUS_ICONS[stage.id]; return <Icon size={17} color={color} />; })()}
+                    </span>
                     <span style={{ fontFamily: "var(--font-jakarta)", fontSize: 15, fontWeight: 700, color: "var(--fg)" }}>
                       {stage.label}
                     </span>
@@ -392,7 +454,10 @@ export default function OrdersPage() {
                           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--fg)", marginBottom: 4 }}>
                             {order.customerName}
                           </div>
-                          <div style={{ fontSize: 12, color: "var(--muted)" }}>📞 {order.customerPhone}</div>
+                          <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5 }}>
+                            <PhoneIcon size={12} color="var(--muted)" />
+                            {order.customerPhone}
+                          </div>
                         </div>
                         <span
                           style={{
@@ -402,24 +467,36 @@ export default function OrdersPage() {
                             fontWeight: 700,
                             background: order.customerType === "shop" ? "#f59e0b20" : "#3b82f620",
                             color: order.customerType === "shop" ? "#f59e0b" : "#3b82f6",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            whiteSpace: "nowrap",
                           }}
                         >
-                          {order.customerType === "shop" ? `🏪 ${t("badge_shop")}` : `👤 ${t("badge_customer")}`}
+                          {order.customerType === "shop" ? (
+                            <><StoreIcon size={11} color="#f59e0b" />{t("badge_shop")}</>
+                          ) : (
+                            <><UserIcon size={11} color="#3b82f6" />{t("badge_customer")}</>
+                          )}
                         </span>
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "var(--muted)",
-                          marginBottom: 12,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        📍 {order.customerAddress}
+                      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                        <span style={{ flexShrink: 0, marginTop: 1 }}>
+                          <MapPinIcon size={12} color="var(--muted)" />
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "var(--muted)",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {order.customerAddress}
+                        </span>
                       </div>
 
                       <div style={{ background: "var(--surface-2)", borderRadius: 8, padding: 8, marginBottom: 12 }}>
@@ -455,8 +532,14 @@ export default function OrdersPage() {
 
                       {order.paymentMethod && (
                         <div style={{ marginTop: 8 }}>
-                          <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 6, background: "var(--surface-2)", color: "var(--muted)" }}>
-                            {order.paymentMethod === "cash" ? t("pay_cash") : order.paymentMethod === "card" ? t("pay_card") : t("pay_online")}
+                          <span style={{ fontSize: 10.5, padding: "4px 9px", borderRadius: 7, background: "var(--surface-2)", color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                            {order.paymentMethod === "cash" ? (
+                              <><CashIcon size={11} color="var(--muted)" />{t("pay_cash")}</>
+                            ) : order.paymentMethod === "card" ? (
+                              <><CardIcon size={11} color="var(--muted)" />{t("pay_card")}</>
+                            ) : (
+                              <><GlobeIcon size={11} color="var(--muted)" />{t("pay_online")}</>
+                            )}
                           </span>
                         </div>
                       )}
@@ -549,8 +632,12 @@ export default function OrdersPage() {
                         </td>
                         <td style={tdStyle({ fontWeight: 600 })}>
                           <div>{o.customerName}</div>
-                          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                            {o.customerType === "shop" ? `🏪 ${t("badge_shop")}` : `👤 ${t("badge_customer")}`}
+                          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                            {o.customerType === "shop" ? (
+                              <><StoreIcon size={11} color="var(--amber)" />{t("badge_shop")}</>
+                            ) : (
+                              <><UserIcon size={11} color="var(--blue)" />{t("badge_customer")}</>
+                            )}
                           </div>
                         </td>
                         <td style={tdStyle({ color: "var(--fg)" })}>{o.customerPhone}</td>
@@ -586,9 +673,13 @@ export default function OrdersPage() {
                               background: `${color}20`,
                               color,
                               whiteSpace: "nowrap",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
                             }}
                           >
-                            {STATUS_ICONS[o.status]} {statusLabel(o.status)}
+                            {(() => { const Icon = STATUS_ICONS[o.status]; return <Icon size={12} color={color} />; })()}
+                            {statusLabel(o.status)}
                           </span>
                         </td>
                       </tr>
@@ -609,6 +700,14 @@ export default function OrdersPage() {
             updateOrderStatus(id, status);
             setSelectedOrder(null);
           }}
+        />
+      )}
+
+      {showNewOrder && (
+        <NewOrderModal
+          products={products}
+          onClose={() => setShowNewOrder(false)}
+          onCreated={fetchOrders}
         />
       )}
 

@@ -1,38 +1,58 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 
+/**
+ * Admin yaratish — faqat ADMIN_SETUP_SECRET bilan ishlaydi.
+ * Uni ishlatish uchun Vercel environment variable qo'shing:
+ *   ADMIN_SETUP_SECRET=<sizning_maxfiy_kalitingiz>
+ * So'ng: POST /api/auth/create-admin  body: { secret: "..." }
+ *
+ * GET — bloklangan (eski ochiq endpoint edi)
+ */
+
 export async function GET() {
+  return NextResponse.json(
+    { error: "Bu endpoint o'chirilgan. POST ishlating." },
+    { status: 405 }
+  );
+}
+
+export async function POST(req: NextRequest) {
   try {
+    const { secret, username, password } = await req.json();
+    const setupSecret = process.env.ADMIN_SETUP_SECRET;
+
+    if (!setupSecret || secret !== setupSecret) {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+    }
+
     await connectDB();
 
-    // Admin allaqachon mavjudligini tekshirish
-    const existingAdmin = await User.findOne({ username: "admin" });
-    if (existingAdmin) {
+    const adminUser = username || "admin";
+    const adminPass = password || "admin1234";
+
+    const existing = await User.findOne({ username: adminUser });
+    if (existing) {
       return NextResponse.json({ error: "Admin allaqachon mavjud" }, { status: 400 });
     }
 
-    // Admin parolini hash qilish
-    const hashedPassword = await bcrypt.hash("admin1234", 10);
+    const hashed = await bcrypt.hash(adminPass, 12);
 
-    // Admin yaratish
     const admin = await User.create({
       name: "Admin",
       phone: "+998901234567",
-      username: "admin",
-      password: hashedPassword,
+      username: adminUser,
+      password: hashed,
       type: "admin",
       isAdmin: true,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Admin muvaffaqiyatli yaratildi",
-      user: {
-        username: admin.username,
-        type: admin.type,
-      },
+      message: "Admin yaratildi",
+      user: { username: admin.username, type: admin.type },
     });
   } catch (err) {
     console.error("Create admin error:", err);

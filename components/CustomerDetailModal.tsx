@@ -1,8 +1,9 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n";
+import { CloseIcon, PhoneIcon, MapPinIcon, StoreIcon, UserIcon, TagIcon } from "./Icons";
 
-type OrderStatus = "yangi_mijoz" | "tolov_otkazildi" | "yetkazib_berishda" | "yetkazib_berildi";
+type OrderStatus ="yangi_mijoz" | "tolov_otkazildi" | "yetkazib_berishda" | "yetkazib_berildi";
 
 interface Order {
   _id: string;
@@ -101,30 +102,39 @@ export function CustomerDetailModal({ customer, orders, onClose }: Props) {
           </div>
           <button
             onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: 8, background: "var(--surface-2)", border: "1px solid var(--border)", cursor: "pointer", fontSize: 16, color: "var(--muted)", flexShrink: 0 }}
+            style={{ width: 32, height: 32, borderRadius: 9, background: "var(--surface-2)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--muted)", flexShrink: 0, display: "grid", placeItems: "center", padding: 0 }}
           >
-            ✕
+            <CloseIcon size={16} color="var(--muted)" />
           </button>
         </div>
 
         {/* Contact + type */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, padding: "14px 16px", background: "var(--surface-2)", borderRadius: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 14, color: "var(--fg)" }}>
-              📞 <a href={`tel:${customer.phone}`} style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 700 }}>{customer.phone}</a>
+            <div style={{ fontSize: 14, color: "var(--fg)", display: "flex", alignItems: "center", gap: 8 }}>
+              <PhoneIcon size={15} color="var(--muted)" />
+              <a href={`tel:${customer.phone}`} style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 700 }}>{customer.phone}</a>
             </div>
             <span
               style={{
-                fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 10,
+                fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 10,
                 background: customer.type === "shop" ? "rgba(234,179,8,0.15)" : "rgba(59,130,246,0.15)",
                 color: customer.type === "shop" ? "var(--amber)" : "var(--blue)",
+                display: "inline-flex", alignItems: "center", gap: 5,
               }}
             >
-              {customer.type === "shop" ? `🏪 ${t("badge_shop")}` : `👤 ${t("badge_individual")}`}
+              {customer.type === "shop" ? (
+                <><StoreIcon size={12} color="var(--amber)" />{t("badge_shop")}</>
+              ) : (
+                <><UserIcon size={12} color="var(--blue)" />{t("badge_individual")}</>
+              )}
             </span>
           </div>
           {customer.shopName && (
-            <div style={{ fontSize: 14, color: "var(--fg)" }}>🏷️ {customer.shopName}</div>
+            <div style={{ fontSize: 14, color: "var(--fg)", display: "flex", alignItems: "center", gap: 8 }}>
+              <TagIcon size={15} color="var(--muted)" />
+              {customer.shopName}
+            </div>
           )}
         </div>
 
@@ -172,7 +182,10 @@ export function CustomerDetailModal({ customer, orders, onClose }: Props) {
                     ))}
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 12.5, color: "var(--muted)" }}>📍 {o.customerAddress.slice(0, 50)}{o.customerAddress.length > 50 ? "..." : ""}</span>
+                    <span style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                      <MapPinIcon size={13} color="var(--muted)" />
+                      {o.customerAddress.slice(0, 50)}{o.customerAddress.length > 50 ? "..." : ""}
+                    </span>
                     <span style={{ fontWeight: 800, color: "var(--fg)", fontSize: 14 }}>{formatCurrency(o.totalAmount)} so&apos;m</span>
                   </div>
                 </div>

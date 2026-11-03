@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AlertIcon } from "@/components/Icons";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -153,9 +154,13 @@ export default function AdminLoginPage() {
                   border: "1px solid rgba(239,68,68,0.3)",
                   color: "#f87171",
                   fontSize: 13,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
-                ⚠️ {error}
+                <AlertIcon size={16} color="#f87171" />
+                {error}
               </div>
             )}
 

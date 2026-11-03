@@ -1,137 +1,139 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import dbConnect from "@/lib/db";
 import Order, { IOrder } from "@/models/Order";
+import Product from "@/models/Product";
+import { requireAdmin } from "@/lib/auth";
 
-// Matches the "601 X-Printer 80mm" invoice layout the business uses.
-// Each order becomes one block of ~14 header rows + a product table +
-// totals + footer notes, separated by a blank row from the next block.
+// SmaG накладная — 80mm receipt layout:
+// Товар | Кор | Кг/кор | Цена/кг | Сумма
 
-const COL_COUNT = 20; // A..T, same width as the sample sheet
+const COMPANY = "SmaG";
+const MONEY = "# ##0";
+const KG = "0.0";
 
-function pad(arr: (string | number)[]): (string | number)[] {
-  while (arr.length < COL_COUNT) arr.push("");
-  return arr;
-}
-
-function fmtMoney(n: number): string {
-  return new Intl.NumberFormat("ru-RU").format(n);
-}
+const THIN = { style: "thin" as const, color: { argb: "FF000000" } };
+const BOX = { top: THIN, left: THIN, bottom: THIN, right: THIN };
+const DASHES = "-".repeat(45);
 
 function fmtDate(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
-function invoiceNumber(id: string, createdAt: Date): string {
-  // Short, human-readable: s_<yymmdd><last4ofid>
-  const yy = String(createdAt.getFullYear()).slice(2);
-  const mm = String(createdAt.getMonth() + 1).padStart(2, "0");
-  const dd = String(createdAt.getDate()).padStart(2, "0");
-  const tail = id.slice(-5).toUpperCase();
-  return `s_${yy}${mm}${dd}${tail}`;
+/** "3.5 kg" | "3,5 kg" | "500 g" -> kilograms */
+function parseKg(weight?: string): number {
+  if (!weight) return 0;
+  const m = weight.replace(",", ".").match(/([\d.]+)\s*(kg|кг|g|г)?/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  if (!isFinite(n)) return 0;
+  const unit = (m[2] || "kg").toLowerCase();
+  return unit === "g" || unit === "г" ? n / 1000 : n;
 }
 
-function buildBlock(order: IOrder): (string | number)[][] {
-  const rows: (string | number)[][] = [];
-  const created = new Date(order.createdAt);
+function writeOrder(
+  ws: ExcelJS.Worksheet,
+  order: IOrder,
+  weightOf: (line: { productId: string; productName: string }) => number,
+  startRow: number
+): number {
+  let r = startRow;
 
-  // Header
-  rows.push(pad(["SmaG"]));
-  rows.push(pad([`Номер накладной: ${invoiceNumber(String(order._id), created)}`]));
-  rows.push(pad([`Дата накладной: ${fmtDate(created)}`]));
-  rows.push(pad([`Менеджер: Admin`]));
-  rows.push(pad([`Номер телефона: +998 95 839 19 19`]));
-  rows.push(
-    pad([
-      order.customerType === "shop"
-        ? `Магазин: ${order.customerName}`
-        : `Мижоз: ${order.customerName}`,
-    ])
-  );
-  rows.push(pad([`Номер телефона: ${order.customerPhone}`]));
-  rows.push(pad([`Адрес: ${order.customerAddress}`]));
-  rows.push(pad([`Способ оплаты: ${
-    order.paymentMethod === "cash"
-      ? "Наличные"
-      : order.paymentMethod === "card"
-      ? "Карта"
-      : order.paymentMethod === "online"
-      ? "Онлайн"
-      : "—"
-  }`]));
-  rows.push(pad([`Статус: ${
-    order.status === "yangi_mijoz"
-      ? "Новый заказ"
-      : order.status === "tolov_otkazildi"
-      ? "Оплата произведена"
-      : order.status === "yetkazib_berishda"
-      ? "В доставке"
-      : "Доставлено"
-  }`]));
-  rows.push(pad([""]));
+  const bandRow = (text: string, opts: Partial<ExcelJS.Font> = {}, align: "left" | "center" = "left", h = 16) => {
+    ws.mergeCells(r, 1, r, 5);
+    const c = ws.getCell(r, 1);
+    c.value = text;
+    c.font = { size: 10, ...opts };
+    c.alignment = { horizontal: align, vertical: "middle" };
+    ws.getRow(r).height = h;
+    r++;
+  };
 
-  // Table header — columns match the sample's layout:
-  // A=№, B=Товар, G=Бл, J=Кол, M=Цена, Q=Сумма
-  const headerRow: (string | number)[] = new Array(COL_COUNT).fill("");
-  headerRow[0] = "№";
-  headerRow[1] = "Товар";
-  headerRow[6] = "Бл";
-  headerRow[9] = "Кол";
-  headerRow[12] = "Цена";
-  headerRow[16] = "Сумма";
-  rows.push(headerRow);
+  // ---- Header ----
+  bandRow(COMPANY, { size: 22, bold: true, name: "Times New Roman" }, "center", 32);
+  bandRow("НАКЛАДНАЯ", { size: 12, bold: true }, "center", 20);
+  ws.getRow(r).height = 6;
+  r++;
 
-  // Category label (grouping) — if products have a shared series, use it;
-  // otherwise just "Печенье"
-  rows.push(pad(["Печенье"]));
+  bandRow(`Дата: ${fmtDate(new Date(order.createdAt))}`, { bold: true });
+  bandRow(`Клиент: ${order.customerName}`, { bold: true });
+  bandRow(`Телефон: ${order.customerPhone}`, { bold: true });
+  bandRow(DASHES, { size: 9 });
 
-  // Products
-  let totalBl = 0;
-  let totalKol = 0;
-  let totalSum = 0;
-  order.products.forEach((p, idx) => {
-    const bl = p.quantity;
-    const kol = p.quantity;
-    const sum = p.quantity * p.price;
-    totalBl += bl;
-    totalKol += kol;
-    totalSum += sum;
-    const r: (string | number)[] = new Array(COL_COUNT).fill("");
-    r[0] = idx + 1;
-    r[1] = p.productName;
-    r[6] = bl;
-    r[9] = kol;
-    r[12] = fmtMoney(p.price);
-    r[16] = fmtMoney(sum);
-    rows.push(r);
+  // ---- Table header ----
+  const head = ws.getRow(r);
+  ["Товар", "Кор", "Кг/кор", "Цена/кг", "Сумма"].forEach((text, i) => {
+    const c = head.getCell(i + 1);
+    c.value = text;
+    c.font = { bold: true, size: 10 };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    c.border = BOX;
   });
+  head.height = 20;
+  r++;
 
-  // Totals rows
-  const itogoRow: (string | number)[] = new Array(COL_COUNT).fill("");
-  itogoRow[0] = "Итого";
-  itogoRow[6] = totalBl;
-  itogoRow[9] = totalKol;
-  itogoRow[16] = fmtMoney(totalSum);
-  rows.push(itogoRow);
+  // ---- Product lines ----
+  let totalSum = 0;
+  for (const p of order.products) {
+    const kgPerBox = weightOf(p);
+    const sum = p.quantity * p.price;
+    totalSum += sum;
 
-  const grandRow: (string | number)[] = new Array(COL_COUNT).fill("");
-  grandRow[0] = "Общий итог";
-  grandRow[6] = totalBl;
-  grandRow[9] = totalKol;
-  grandRow[16] = fmtMoney(totalSum);
-  rows.push(grandRow);
+    const row = ws.getRow(r);
+    row.getCell(1).value = p.productName;
+    row.getCell(2).value = p.quantity;
+    row.getCell(3).value = kgPerBox || null;
+    row.getCell(4).value = kgPerBox ? p.price / kgPerBox : null;
+    row.getCell(5).value = sum;
 
-  rows.push(pad([`Примечение: ${order.notes || ""}`]));
-  rows.push(pad([`Комментарий: `]));
-  rows.push(pad([""])); // separator
+    row.getCell(1).alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
+    row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
+    row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
+    row.getCell(4).alignment = { horizontal: "right", vertical: "middle", indent: 1 };
+    row.getCell(5).alignment = { horizontal: "right", vertical: "middle", indent: 1 };
 
-  return rows;
+    row.getCell(3).numFmt = KG;
+    row.getCell(4).numFmt = MONEY;
+    row.getCell(5).numFmt = MONEY;
+
+    for (let c = 1; c <= 5; c++) {
+      row.getCell(c).font = { size: 10 };
+      row.getCell(c).border = BOX;
+    }
+    row.height = 22;
+    r++;
+  }
+
+  // ---- Total ----
+  ws.mergeCells(r, 1, r, 4);
+  const tot = ws.getRow(r);
+  tot.getCell(1).value = "ИТОГО:";
+  tot.getCell(5).value = totalSum;
+  tot.getCell(1).alignment = { horizontal: "right", vertical: "middle", indent: 1 };
+  tot.getCell(5).alignment = { horizontal: "right", vertical: "middle", indent: 1 };
+  tot.getCell(5).numFmt = MONEY;
+  for (let c = 1; c <= 5; c++) {
+    tot.getCell(c).font = { bold: true, size: 11 };
+    tot.getCell(c).border = BOX;
+  }
+  tot.height = 22;
+  r++;
+
+  // ---- Footer ----
+  bandRow(DASHES, { size: 9 });
+  bandRow("Подпись: __________________________", { bold: true }, "left", 24);
+
+  ws.getRow(r).height = 24;
+  r++;
+
+  return r;
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     await dbConnect();
     const body = await req.json();
@@ -154,37 +156,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build sheet
-    const allRows: (string | number)[][] = [];
-    for (const o of orders) {
-      for (const row of buildBlock(o)) allRows.push(row);
-    }
-    const ws = XLSX.utils.aoa_to_sheet(allRows);
+    // Orders store either a Mongo _id or a site slug, so resolve the box weight
+    // by id first and fall back to the product name.
+    const allLines = orders.flatMap((o) => o.products);
+    const objectIds = [...new Set(allLines.map((p) => p.productId))].filter((id) =>
+      /^[0-9a-fA-F]{24}$/.test(id)
+    );
+    const names = [...new Set(allLines.map((p) => p.productName))];
 
-    // Column widths similar to sample
-    ws["!cols"] = [
-      { wch: 6 },   // № (A)
-      { wch: 24 },  // Товар name start (B)
-      { wch: 3 }, { wch: 3 }, { wch: 3 }, { wch: 3 }, // C-F (part of Товар)
-      { wch: 6 },   // Бл (G)
-      { wch: 3 }, { wch: 3 }, // H-I
-      { wch: 7 },   // Кол (J)
-      { wch: 3 }, { wch: 3 }, // K-L
-      { wch: 11 },  // Цена (M)
-      { wch: 3 }, { wch: 3 }, { wch: 3 }, // N-P
-      { wch: 13 },  // Сумма (Q)
-      { wch: 3 }, { wch: 3 }, { wch: 3 }, // R-T
+    const products = await Product.find({
+      $or: [{ _id: { $in: objectIds } }, { name: { $in: names } }],
+    })
+      .select("_id name weight")
+      .lean();
+
+    const kgById = new Map<string, number>();
+    const kgByName = new Map<string, number>();
+    for (const p of products as { _id: unknown; name?: string; weight?: string }[]) {
+      const kg = parseKg(p.weight);
+      kgById.set(String(p._id), kg);
+      if (p.name) kgByName.set(p.name, kg);
+    }
+
+    const weightOf = (line: { productId: string; productName: string }) =>
+      kgById.get(line.productId) ?? kgByName.get(line.productName) ?? 0;
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = COMPANY;
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet("Чек 80mm", {
+      pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+
+    ws.columns = [
+      { width: 28 }, // Товар
+      { width: 8 },  // Кор
+      { width: 10 }, // Кг/кор
+      { width: 13 }, // Цена/кг
+      { width: 15 }, // Сумма
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Накладная 80mm");
-    const buf: Buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    let row = 1;
+    for (const order of orders) {
+      row = writeOrder(ws, order, weightOf, row);
+    }
 
-    const date = new Date();
-    const stamp = `${fmtDate(date)}_${String(date.getHours()).padStart(2, "0")}-${String(
-      date.getMinutes()
-    ).padStart(2, "0")}`;
-    const filename = `SmaG X-Printer 80mm - ${stamp}.xlsx`;
+    const buf = await wb.xlsx.writeBuffer();
+
+    const now = new Date();
+    const p2 = (n: number) => String(n).padStart(2, "0");
+    const stamp = `${p2(now.getDate())}.${p2(now.getMonth() + 1)}.${now.getFullYear()} ${p2(
+      now.getHours()
+    )}_${p2(now.getMinutes())}_${p2(now.getSeconds())}`;
+    const filename = `SmaG_nakladnoy_601_80mm - ${stamp} - Чек 80mm.xlsx`;
 
     return new NextResponse(new Uint8Array(buf), {
       status: 200,

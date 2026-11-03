@@ -7,6 +7,8 @@ export interface IProduct {
   category: string;
   categoryLabel: string;
   price: number;
+  /** Price for shop (wholesale) customers. Empty = price + 10% (see lib/pricing.ts) */
+  shopPrice?: number;
   weight: string;
   netWeight: string;
   unit: string;
@@ -28,6 +30,7 @@ const schemaFields: any = {
   category: { type: String, default: "pechenye" },
   categoryLabel: { type: String, required: true, trim: true },
   price: { type: Number, required: true },
+  shopPrice: { type: Number, min: 0 },
   weight: { type: String, required: true },
   netWeight: { type: String, default: "" },
   unit: { type: String, default: "quti" },

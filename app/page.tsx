@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { useLanguage } from "@/lib/i18n";
+import { BoxIcon, WalletIcon, UserIcon, StoreIcon, FireIcon } from "@/components/Icons";
+import { apiFetch } from "@/lib/api";
 
 type Period = "daily" | "weekly" | "monthly";
 type OrderStatus = "yangi_mijoz" | "tolov_otkazildi" | "yetkazib_berishda" | "yetkazib_berildi";
@@ -68,7 +70,7 @@ export default function AdminDashboard() {
 
   async function fetchOrders() {
     try {
-      const res = await fetch("/api/orders");
+      const res = await apiFetch("/api/orders");
       const data = await res.json();
       if (data.success) setOrders(data.orders);
     } catch (err) {
@@ -158,27 +160,40 @@ export default function AdminDashboard() {
 
         {/* Stat cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 28 }}>
-          {[
-            ["📦", t("stat_orders"), stats.orders, "", "var(--accent)"],
-            ["💰", t("stat_revenue"), fmt(stats.revenue), " so'm", "var(--green)"],
-            ["👤", t("stat_individual"), stats.individual, " ta", "var(--blue)"],
-            ["🏪", t("stat_shop"), stats.shop, " ta", "var(--amber)"],
-          ].map(([icon, lbl, val, suffix, color]) => (
-            <div key={lbl as string} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, padding: "20px 22px" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: `${color}20`, display: "grid", placeItems: "center", fontSize: 18, marginBottom: 12 }}>
-                {icon as string}
+          {([
+            { Icon: BoxIcon, label: t("stat_orders"), value: stats.orders, suffix: "", color: "var(--accent)", tint: "rgba(217,119,6,0.12)" },
+            { Icon: WalletIcon, label: t("stat_revenue"), value: fmt(stats.revenue), suffix: " so'm", color: "var(--green)", tint: "rgba(34,197,94,0.12)" },
+            { Icon: UserIcon, label: t("stat_individual"), value: stats.individual, suffix: " ta", color: "var(--blue)", tint: "rgba(59,130,246,0.12)" },
+            { Icon: StoreIcon, label: t("stat_shop"), value: stats.shop, suffix: " ta", color: "var(--amber)", tint: "rgba(245,158,11,0.12)" },
+          ]).map(({ Icon, label, value, suffix, color, tint }) => (
+            <div
+              key={label}
+              className="stat-card"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: 18,
+                padding: "20px 22px",
+                transition: "transform 0.18s, box-shadow 0.18s",
+              }}
+            >
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: tint, display: "grid", placeItems: "center", marginBottom: 14 }}>
+                <Icon size={21} color={color} />
               </div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: color as string, fontFamily: "var(--font-jakarta)" }}>
-                {val as string | number}{suffix as string}
+              <div style={{ fontSize: 26, fontWeight: 800, color, fontFamily: "var(--font-jakarta)", letterSpacing: "-0.5px" }}>
+                {value}{suffix}
               </div>
-              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>{lbl as string}</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>{label}</div>
             </div>
           ))}
         </div>
 
         {/* Top products */}
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: "24px", marginBottom: 24 }}>
-          <h3 style={{ fontFamily: "var(--font-jakarta)", fontSize: 16, fontWeight: 700, color: "var(--fg)", marginBottom: 16 }}>
+          <h3 style={{ fontFamily: "var(--font-jakarta)", fontSize: 16, fontWeight: 700, color: "var(--fg)", marginBottom: 16, display: "flex", alignItems: "center", gap: 9 }}>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(239,68,68,0.12)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <FireIcon size={17} color="var(--red)" />
+            </span>
             {t("top_products_title")}
           </h3>
           {topProducts.length === 0 ? (
@@ -187,7 +202,17 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {topProducts.map((p, i) => (
                 <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ color: "var(--muted)", fontSize: 13, width: 20, textAlign: "center" }}>{i + 1}</span>
+                  <span
+                    style={{
+                      width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+                      display: "grid", placeItems: "center",
+                      background: i === 0 ? "var(--accent)" : "var(--surface-2)",
+                      color: i === 0 ? "#fff" : "var(--muted)",
+                      fontSize: 12, fontWeight: 700,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                       <span style={{ fontSize: 14, color: "var(--fg)", fontWeight: 500 }}>{p.name}</span>
@@ -274,6 +299,10 @@ export default function AdminDashboard() {
       </main>
 
       <style>{`
+        .stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.07);
+        }
         @media (max-width: 860px) {
           .admin-shell { flex-direction: column; }
           .admin-main { padding: 18px !important; }

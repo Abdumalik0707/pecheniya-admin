@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, models } from "mongoose";
 
 export interface IOrder extends Document {
+  /** Account that placed the order (site customers). Older orders only have customerPhone. */
+  userId?: string;
   customerName: string;
   customerPhone: string;
   customerAddress: string;
@@ -16,6 +18,8 @@ export interface IOrder extends Document {
   totalAmount: number;
   status: "yangi_mijoz" | "tolov_otkazildi" | "yetkazib_berishda" | "yetkazib_berildi";
   paymentMethod?: "cash" | "card" | "online";
+  /** Receipt (card transfer screenshot) id in the "receipts" collection */
+  receiptId?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +27,7 @@ export interface IOrder extends Document {
 
 const OrderSchema = new Schema<IOrder>(
   {
+    userId: { type: String, index: true },
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     customerAddress: { type: String, required: true },
@@ -44,6 +49,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "yangi_mijoz",
     },
     paymentMethod: { type: String, enum: ["cash", "card", "online"] },
+    receiptId: { type: String },
     notes: { type: String },
   },
   { timestamps: true }

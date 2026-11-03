@@ -32,11 +32,11 @@ function FlagIcon({ lang }: { lang: Lang }) {
   }
   return (
     <svg {...common} viewBox="0 0 20 14" xmlns="http://www.w3.org/2000/svg">
-      <rect width="20" height="14" fill="#012169" />
-      <rect y="5.5" width="20" height="3" fill="#fff" />
-      <rect x="8.5" width="3" height="14" fill="#fff" />
-      <rect y="6.2" width="20" height="1.6" fill="#c8102e" />
-      <rect x="9.2" width="1.6" height="14" fill="#c8102e" />
+      <rect width="20" height="14" fill="#b22234" />
+      {[1, 3, 5, 7, 9, 11].map((y) => (
+        <rect key={y} y={y} width="20" height="1" fill="#fff" />
+      ))}
+      <rect width="8.6" height="7" fill="#3c3b6e" />
     </svg>
   );
 }
