@@ -349,3 +349,21 @@ export function SpinnerIcon({ size = 20, color = "currentColor", strokeWidth = 2
     </svg>
   );
 }
+
+export function EyeIcon({ size = 20, color = "currentColor", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth)}>
+      <path d="M2.1 12.3a1 1 0 0 1 0-.6C3.7 7.6 7.5 5 12 5s8.3 2.6 9.9 6.7a1 1 0 0 1 0 .6C20.3 16.4 16.5 19 12 19s-8.3-2.6-9.9-6.7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ size = 20, color = "currentColor", strokeWidth = 1.8 }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth)}>
+      <path d="M10.7 5.1A10 10 0 0 1 12 5c4.5 0 8.3 2.6 9.9 6.7a1 1 0 0 1 0 .6 13 13 0 0 1-1.7 2.7M6.6 6.7a13 13 0 0 0-4.5 5 1 1 0 0 0 0 .6C3.7 16.4 7.5 19 12 19a9.7 9.7 0 0 0 5.4-1.6" />
+      <path d="M14.1 14.2a3 3 0 1 1-4.2-4.2M2 2l20 20" />
+    </svg>
+  );
+}

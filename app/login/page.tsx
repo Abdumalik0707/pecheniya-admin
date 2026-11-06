@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AlertIcon } from "@/components/Icons";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -124,8 +125,7 @@ export default function AdminLoginPage() {
               <label style={{ display: "block", color: "#a99a86", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 {t("login_password")}
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={pass}
                 onChange={(e) => setPass(e.target.value)}
                 placeholder="••••••••"

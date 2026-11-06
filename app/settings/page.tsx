@@ -6,6 +6,7 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { useLanguage } from "@/lib/i18n";
 import { AlertIcon, CheckCircleIcon, SettingsIcon } from "@/components/Icons";
 import { apiFetch } from "@/lib/api";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -182,8 +183,7 @@ export default function SettingsPage() {
 
             <div>
               <label style={labelStyle}>Joriy parol *</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Hozirgi parolingiz"
@@ -193,8 +193,7 @@ export default function SettingsPage() {
 
             <div>
               <label style={labelStyle}>Yangi parol</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Kamida 6 belgi"
@@ -208,8 +207,7 @@ export default function SettingsPage() {
             {newPassword && (
               <div>
                 <label style={labelStyle}>Yangi parolni tasdiqlang</label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Yangi parolni qayta kiriting"
