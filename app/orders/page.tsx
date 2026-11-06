@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { OrderDetailModal } from "@/components/OrderDetailModal";
 import { NewOrderModal } from "@/components/NewOrderModal";
 import { useLanguage } from "@/lib/i18n";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import {
   SparkleIcon,
   BoxIcon,
@@ -20,7 +20,6 @@ import {
   MapPinIcon,
   StoreIcon,
   UserIcon,
-  ArrowLeftIcon,
   CashIcon,
   CardIcon,
   GlobeIcon,
@@ -100,6 +99,7 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [draggedOrder, setDraggedOrder] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [view, setView] = useState<ViewMode>("kanban");
@@ -109,6 +109,7 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<Array<{ _id: string; name: string; price: number; shopPrice?: number; unit: string; image: string; categoryLabel: string }>>([]);
 
   useEffect(() => {
+    setMounted(true);
     const u = localStorage.getItem("pecheniya_admin");
     if (!u) {
       router.push("/login");
@@ -256,18 +257,14 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="orders-page" style={{ minHeight: "100vh", background: "var(--bg)", padding: "28px 32px" }}>
+    <div className="admin-shell" style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+      <AdminSidebar active="orders" mounted={mounted} />
+
+      <main className="orders-page admin-main" style={{ flex: 1, padding: "28px 32px", overflowX: "hidden", minWidth: 0 }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              onClick={() => router.push("/")}
-              style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 7 }}
-            >
-              <ArrowLeftIcon size={16} color="var(--muted)" />
-              {t("back")}
-            </button>
             <h1 style={{ fontFamily: "var(--font-jakarta)", fontSize: 24, fontWeight: 800, color: "var(--fg)", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 36, height: 36, borderRadius: 11, background: "var(--accent-bg)", display: "grid", placeItems: "center", flexShrink: 0 }}>
                 <BoxIcon size={20} color="var(--accent)" />
@@ -287,7 +284,6 @@ export default function OrdersPage() {
               <PlusIcon size={15} color="#fff" />
               Yangi buyurtma
             </button>
-            <LanguageSwitcher />
           </div>
         </div>
         <p style={{ color: "var(--muted)", fontSize: 14 }}>{t("orders_subtitle")}</p>
@@ -711,7 +707,12 @@ export default function OrdersPage() {
         />
       )}
 
+      </main>
+
       <style>{`
+        @media (max-width: 860px) {
+          .admin-shell { flex-direction: column; }
+        }
         @media (max-width: 700px) {
           .orders-page { padding: 16px !important; }
           .kanban-grid { grid-template-columns: 1fr !important; }
